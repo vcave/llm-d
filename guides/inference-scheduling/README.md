@@ -11,6 +11,7 @@ This profile defaults to the approximate prefix cache aware scorer, which only o
 This example out of the box requires 2 GPUs of any supported kind:
 
 - **NVIDIA GPUs**: Any NVIDIA GPU (support determined by the inferencing image used)
+- **AMD GPUs**: Any AMD GPU (support determined by the inferencing image used)
 - **Intel XPU/GPUs**: Intel Data Center GPU Max 1550 or compatible Intel XPU device
 - **TPUs**: Google Cloud TPUs (when using GKE TPU configuration)
 
@@ -107,9 +108,10 @@ helmfile apply -e standalone -n ${NAMESPACE}
 
 #### Hardware Backends
 
-Currently in the `inference-scheduling` example we suppport configurations for `xpu`, `tpu`, `cpu`, and `cuda` GPUs. By default we use modelserver values supporting `cuda` GPUs, but to deploy on one of the other hardware backends you may use:
+Currently in the `inference-scheduling` example we support configurations for `amd`, `xpu`, `tpu`, `cpu`, and `cuda` GPUs. By default we use modelserver values supporting `cuda` GPUs, but to deploy on one of the other hardware backends you may use:
 
 ```bash
+helmfile apply -e amd  -n ${NAMESPACE} # targets istio as gateway provider with AMD GPU hardware
 helmfile apply -e xpu  -n ${NAMESPACE} # targets istio as gateway provider with XPU hardware
 # or
 helmfile apply -e gke_tpu  -n ${NAMESPACE} # targets GKE externally managed as gateway provider with TPU hardware
