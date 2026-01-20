@@ -13,9 +13,10 @@ environments:
       - ../prereq/gateway-provider/common-configurations/gke.yaml
   gke_tpu: &GKETPU
     <<: *GKE
+  amd: &AMD
+    <<: *I
   xpu: &XPU
-    values:
-      - ../prereq/gateway-provider/common-configurations/istio.yaml
+    <<: *I
   aks: &AKS
     <<: *I
   default:
@@ -66,7 +67,7 @@ releases:
               enabled: false
     {{- end }}
     # Apply destination rule for anything istio
-    {{- if or (eq .Environment.Name "istio") (eq .Environment.Name "default") (eq .Environment.Name "aks") (eq .Environment.Name "xpu") }}
+    {{- if or (eq .Environment.Name "istio") (eq .Environment.Name "default") (eq .Environment.Name "aks") (eq .Environment.Name "amd") (eq .Environment.Name "xpu") }}
       - provider:
           name: {{ .Environment.Values.provider.name }}
           istio:
@@ -93,7 +94,13 @@ releases:
       - {{ printf "infra-%s" $rn | quote }}
       - {{ printf "gaie-%s" $rn | quote }}
     values:
-    {{- if eq .Environment.Name "xpu" }}
+    {{- if eq .Environment.Name "amd" }}
+      {{- if env "USE_HOST_NETWORK" }}
+        - ms-pd/values_amd_host_network.yaml
+      {{- else }}
+        - ms-pd/values_amd.yaml
+      {{- end }}
+    {{- else if eq .Environment.Name "xpu" }}
       - ms-pd/values_xpu.yaml
     {{- else if eq .Environment.Name "gke_tpu" }}
       - ms-pd/values_tpu.yaml
