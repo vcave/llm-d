@@ -107,7 +107,11 @@ releases:
       - {{ printf "gaie-%s" $rn | quote }}
     values:
     {{- if eq .Environment.Name "amd" }}
-      - ms-pd/values_amd.yaml
+      {{- if eq (env "USE_HOST_NETWORK") "yes"}}
+        - ms-pd/values_amd_host_network.yaml
+      {{- else }}
+        - ms-pd/values_amd.yaml
+      {{- end }}
     {{- else if eq .Environment.Name "xpu" }}
       - ms-pd/values_xpu.yaml
     {{- else if eq .Environment.Name "hpu" }}

@@ -10,7 +10,13 @@ This guide demonstrates how to deploy models using vLLM's P/D disaggregation sup
 
 **_NOTE:_** The ROCm Attention backend must be used `ROCM_ATTN` when tensor parallelism values for prefill and decode are different. There's a PR in progress to address this issue with other attention backends.
 
-In this example, we will demonstrate a deployment of `amd/Llama-3.3-70B-Instruct-FP8-KV`.
+In this example, we will demonstrate a deployment of `amd/Llama-3.3-70B-Instruct-FP8-KV`, a "resource-based" approach for production, and a "hostNetwork"-based approach for debugging.
+
+|                 | **Resource-based (Default)**     | **hostNetwork (Debug)**          |
+| --------------- | -------------------------------- | -------------------------------- |
+| **Network**     | Standard K8s                     | Host                             |
+| **Parallelism** | 4 TP=1 (P) / 1 TP=4 (D)          | 1 TP=8 (P) / 1 TP=8 (D)          |
+| **Use Case**    | Production / Scaled Benchmarking | RDMA Troubleshooting / Debugging |
 
 ## P/D Best Practices
 
@@ -92,6 +98,30 @@ This command triggers the deployment of the disaggregated configuration describe
 
 **_NOTE:_** This uses Istio as the default provider, see [Gateway Options](./README.md#gateway-options) for installing with a specific provider.
 
+### Deploy with host network
+
+For **debugging** purposes, this section covers deploying P/D disaggregation using Kubernetes `hostNetwork` feature.
+
+> WARNING: When `hostNetwork: true` is set, the container directly uses the network interfaces and port space of the node it is running on, bypassing the standard Kubernetes networking model and the Pod's isolated network namespace.
+> WARNING: When `privileged: true` is set, the container has full administrative access to the underlying host, thus allowing access to the RDMA devices. It should only be used for debugging and avoided in production where proper network operators and device plugins should be used.
+
+To ensure exclusive access to GPU resources in `hostNetwork` mode, make sure to adjust the number of GPU resources (8 in this example) to the maximum number of GPUs available on the node.
+
+To enact a P/D disaggregation deployment on AMD hardware using `hostNetwork`, use the `-e amd` argument and the `USE_HOST_NETWORK` environment variable to `helmfile` as follow:
+```bash
+cd guides/pd-disaggregation
+USE_HOST_NETWORK=yes helmfile apply -e amd -n ${NAMESPACE}
+```
+
+Setting the `USE_HOST_NETWORK` environment variable triggers the use of the `ms-pd/values_amd_host_network.yaml` model service, which adds the following declarations to the decode and prefill sections:
+```
+hostNetwork: true
+securityContext:
+  privileged: true
+  capabilities:
+    add: ["IPC_LOCK", "SYS_PTRACE"]
+```
+
 ### RIXL Configuration
 
 #### UCX Transport & Logging
@@ -100,7 +130,8 @@ RIXL uses the UCX library as its underlying transport mechanism for KV transfers
 **Network & Transport Tuning**
 Use these variables to specify how and where data travels across your hardware:
 * UCX_TLS: Defines the allowed Transport Layer protocols (e.g., tcp, rc, ud, sm).
-* UCX_IB_GID_INDEX: Specifies the Global Identifier (GID) index for InfiniBand or RoCE devices.
+* UCX_IB_GID_INDEX: Specifies the Global IDentifier (GID) index for InfiniBand or RoCE devices.
+* UCX_NET_DEVICES: Explicitly lists the network interfaces (e.g., eth0, mlx5_0:1) UCX is permitted to use. This is useful to restrict UCX to only use backend NICs with RDMA support.
 * UCX_IB_TRAFFIC_CLASS: Specifies the KV transfer traffic class to use for InfiniBand or RoCE devices.
 
 **Debugging & Logging**
@@ -185,15 +216,16 @@ replicaset.apps/ms-pd-llm-d-modelservice-prefill-b4558dd49    4         4       
 
 ```
 
+**_NOTE:_** The hostNetwork-based configuration would only show a single prefill deployment and pod.
 **_NOTE:_** This assumes no other guide deployments in your given `${NAMESPACE}` and you have not changed the default release names via the `${RELEASE_NAME}` environment variable.
 
 ## Using the stack
 
-For instructions on getting started making inference requests see [our docs](../02_verifying_a_guide.md)
+For instructions on getting started making inference requests see [our docs](../../docs/getting-started-inferencing.md)
 
 ## Tuning Selective PD
 
-Selective PD is a feature in the `inference-scheduler` within the context of prefill-decode disaggregation, although it is disabled by default. This feature enables routing to just decode even with the P/D deployed. To enable it, you will need to set `threshold` value for the `pd-profile-handler` plugin, in the [GAIE values file](./gaie-pd/values.yaml). You can see the value of this here:
+Selective PD is a feature in the `inference-scheduler` within the context of prefill-decode disaggregation, although it is disabled by default. This features enables routing to just decode even with the P/D deployed. To enable it, you will need to set `threshold` value for the `pd-profile-handler` plugin, in the [GAIE values file](./gaie-pd/values.yaml). You can see the value of this here:
 
 ```bash
 cat gaie-pd/values.yaml | yq '.inferenceExtension.pluginsCustomConfig."pd-config.yaml"' | yq '.plugins[] | select(.type == "pd-profile-handler")'
