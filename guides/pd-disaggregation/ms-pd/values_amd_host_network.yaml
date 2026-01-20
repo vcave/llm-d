@@ -1,0 +1,243 @@
+multinode: false
+
+modelArtifacts:
+  uri: "hf://amd/Llama-3.3-70B-Instruct-FP8-KV"
+  size: 100Gi
+  authSecretName: "llm-d-hf-token"
+  name: "amd/Llama-3.3-70B-Instruct-FP8-KV"
+
+accelerator:
+  type: amd
+
+routing:
+  servicePort: 8000
+  proxy:
+    image: ghcr.io/llm-d/llm-d-routing-sidecar:v0.4.0-rc.1
+    connector: nixlv2
+    secure: false
+
+decode:
+  parallelism:
+    tensor: 8
+    data: 1
+  create: true
+  replicas: 1
+  extraConfig:
+    hostNetwork: true
+    dnsPolicy: ClusterFirstWithHostNet
+  monitoring:
+    podmonitor:
+      enabled: true
+      portName: "metrics"
+      path: "/metrics"
+      interval: "30s"
+  containers:
+  - name: "vllm"
+    image: ghcr.io/vcave/llm-d/llm-d-rocm:v0.4.5-debug # ghcr.io/llm-d/llm-d-rocm:v0.4
+    modelCommand: vllmServe
+    args:
+      - "--tensor-parallel-size"
+      - "8" # Adjusted to match decode.parallelism.tensor
+      - "--block-size"
+      - "128"
+      - "--kv-transfer-config"
+      - '{"kv_connector":"NixlConnector", "kv_role":"kv_both"}'
+      - "--disable-uvicorn-access-log"
+      - '--attention-backend'
+      - 'ROCM_ATTN' # necessary when TP prefill != TP decode
+      - "--max-model-len"
+      - "32000"
+    env:
+      #- name: UCX_PROTO_INFO
+      #  value: "y"
+      # UCX Logging and debugging
+      #- name: UCX_PROTO_INFO
+      #  value: "y"
+      #- name: UCX_LOG_LEVEL
+      #  value: "info"
+      # Customize transport layers ; see docs
+      #- name: UCX_TLS
+      #  value: "self,sm,rocm,rc"
+      # Customize network devices ; see docs
+      #- name: UCX_NET_DEVICES
+      #  value: "mlx5_0:1,mlx5_2:1,mlx5_3:1,mlx5_4:1,mlx5_5:1,mlx5_7:1,mlx5_8:1,mlx5_9:1"
+      # Customize RDMA GID ; see docs
+      #- name: UCX_IB_GID_INDEX
+      #  value: "3"
+      # Customize KV-transfer traffic class ; see docs
+      #- name: UCX_IB_TRAFFIC_CLASS
+      #  value: "41"
+      - name: VLLM_NIXL_SIDE_CHANNEL_HOST
+        valueFrom:
+          fieldRef:
+            fieldPath: status.podIP
+      - name: VLLM_LOGGING_LEVEL
+        value: INFO
+    ports:
+      - containerPort: 8200
+        name: metrics
+        protocol: TCP
+    resources:
+      limits:
+        memory: 256Gi
+        cpu: "16"
+        amd.com/gpu: "8"
+      requests:
+        memory: 256Gi
+        cpu: "16"
+        amd.com/gpu: "8"
+    securityContext:
+      privileged: true
+      capabilities:
+        add: ["IPC_LOCK", "SYS_PTRACE"]
+    mountModelVolume: true
+    volumeMounts:
+    - name: metrics-volume
+      mountPath: /.config
+    - name: shm
+      mountPath: /dev/shm
+    - name: torch-compile-cache
+      mountPath: /.cache
+    startupProbe:
+      httpGet:
+        path: /v1/models
+        port: 8200
+      initialDelaySeconds: 15
+      periodSeconds: 30
+      timeoutSeconds: 5
+      failureThreshold: 60
+    livenessProbe:
+      httpGet:
+        path: /health
+        port: 8200
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+    readinessProbe:
+      httpGet:
+        path: /v1/models
+        port: 8200
+      periodSeconds: 5
+      timeoutSeconds: 2
+      failureThreshold: 3
+  volumes:
+  - name: metrics-volume
+    emptyDir: {}
+  - name: shm
+    emptyDir:
+      medium: Memory
+      sizeLimit: "64Gi"
+  - name: torch-compile-cache
+    emptyDir: {}
+
+prefill:
+  parallelism:
+    tensor: 8
+    data: 1
+  create: true
+  replicas: 1
+  extraConfig:
+    hostNetwork: true
+    dnsPolicy: ClusterFirstWithHostNet
+  monitoring:
+    podmonitor:
+      enabled: true
+      portName: "metrics"
+      path: "/metrics"
+      interval: "30s"
+  containers:
+  - name: "vllm"
+    image: ghcr.io/vcave/llm-d/llm-d-rocm:v0.4.5-debug # ghcr.io/llm-d/llm-d-rocm:v0.4
+    modelCommand: vllmServe
+    args:
+      - "--tensor-parallel-size"
+      - "8"
+      - "--block-size"
+      - "128"
+      - "--kv-transfer-config"
+      - '{"kv_connector":"NixlConnector", "kv_role":"kv_both"}'
+      - "--disable-uvicorn-access-log"
+      - '--attention-backend'
+      - 'ROCM_ATTN' # necessary when TP prefill != TP decode
+      - "--max-model-len"
+      - "32000"
+    env:
+      # UCX Logging and debugging
+      #- name: UCX_PROTO_INFO
+      #  value: "y"
+      #- name: UCX_LOG_LEVEL
+      #  value: "info"
+      # Customize transport layers ; see docs
+      #- name: UCX_TLS
+      #  value: "self,sm,rocm,rc"
+      # Customize network devices ; see docs
+      #- name: UCX_NET_DEVICES
+      #  value: "mlx5_0:1,mlx5_2:1,mlx5_3:1,mlx5_4:1,mlx5_5:1,mlx5_7:1,mlx5_8:1,mlx5_9:1"
+      # Customize RDMA GID ; see docs
+      #- name: UCX_IB_GID_INDEX
+      #  value: "3"
+      # Customize KV-transfer traffic class ; see docs
+      #- name: UCX_IB_TRAFFIC_CLASS
+      #  value: "41"
+      - name: VLLM_NIXL_SIDE_CHANNEL_HOST
+        valueFrom:
+          fieldRef:
+            fieldPath: status.podIP
+      - name: VLLM_LOGGING_LEVEL
+        value: INFO
+    ports:
+      - containerPort: 8000
+        name: metrics
+        protocol: TCP
+    resources:
+      limits:
+        memory: 256Gi
+        cpu: "8"
+        amd.com/gpu: "8"
+      requests:
+        memory: 256Gi
+        cpu: "8"
+        amd.com/gpu: "8"
+    securityContext:
+      privileged: true
+      capabilities:
+        add: ["IPC_LOCK", "SYS_PTRACE"]
+    mountModelVolume: true
+    volumeMounts:
+    - name: metrics-volume
+      mountPath: /.config
+    - name: shm
+      mountPath: /dev/shm
+    - name: torch-compile-cache
+      mountPath: /.cache
+    startupProbe:
+      httpGet:
+        path: /v1/models
+        port: 8000
+      initialDelaySeconds: 15
+      periodSeconds: 30
+      timeoutSeconds: 5
+      failureThreshold: 60
+    livenessProbe:
+      httpGet:
+        path: /health
+        port: 8000
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+    readinessProbe:
+      httpGet:
+        path: /v1/models
+        port: 8000
+      periodSeconds: 5
+      timeoutSeconds: 2
+      failureThreshold: 3
+  volumes:
+  - name: metrics-volume
+    emptyDir: {}
+  - name: shm
+    emptyDir:
+      medium: Memory
+      sizeLimit: "64Gi"
+  - name: torch-compile-cache
+    emptyDir: {}
