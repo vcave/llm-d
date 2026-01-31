@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=rocm/vllm-dev:nightly_main_20260122
+ARG BASE_IMAGE=vllm/vllm-openai-rocm:v0.15.0
 
 ARG RIXL_BRANCH="f33a5599"
 ARG RIXL_REPO="https://github.com/ROCm/RIXL.git"
@@ -65,6 +65,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv pip install --system -U packaging 'cmake<4' ninja wheel 'setuptools<80' pybind11 meson auditwheel patchelf tomlkit
 
+# ETCD API For RIXL benchmarks binary interacting with ETCD
 RUN --mount=type=cache,target=/root/.cache/ccache \
     git clone ${ETCD_REPO} && \
     cd etcd-cpp-apiv3 && \
