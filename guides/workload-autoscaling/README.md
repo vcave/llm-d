@@ -44,12 +44,12 @@ Before installing WVA, ensure you have:
 
 ## Installation
 
-The workload-autoscaling helmfile supports two installation modes (see [Step 5](#step-5-install-wva-with-llm-d-stack-if-not-deployed-already)):
+The workload-autoscaling helmfile supports two installation modes (see [Step 5](#step-5-install-wva-with-llm-d-stack---if-not-deployed-already)):
 
 1. **Full Installation**: Installs the complete llm-d [Intelligent Inference Scheduling](../inference-scheduling/README.md) stack (infra, gaie, modelservice) plus WVA in a single `helmfile apply` command.
 2. **WVA-Only Installation**: Installs only WVA, connecting to an existing [Intelligent Inference Scheduling](../inference-scheduling/README.md) deployment.
 
-**Install Prometheus Adapter separately in [Step 6](#step-6-install-prometheus-adapter-required-dependency) after WVA installation.** 
+**Install Prometheus Adapter separately in [Step 6](#step-6-install-prometheus-adapter-required-dependency) after WVA installation.**
 
 ### Step 1: Configure WVA Values
 
@@ -188,6 +188,7 @@ WVA automatically discovers its namespace via `POD_NAMESPACE`.
 If you already have the [Intelligent Inference Scheduling](../inference-scheduling/README.md) stack installed, you can install only WVA and connect it to your existing deployment.
 
 **Prerequisites:**
+
 - An existing inference-scheduling deployment in your cluster
 - The namespace where inference-scheduling is deployed (default: `llm-d-inference-scheduler`)
 - The release name postfix used for inference-scheduling (default: `inference-scheduling`)
@@ -208,7 +209,7 @@ export LLMD_RELEASE_NAME_POSTFIX=inference-scheduling
 export WVA_NAMESPACE=llm-d-autoscaler
 ```
 
-**Optional: Explicit Configuration in values.yaml**
+#### Optional: Explicit Configuration in values.yaml
 
 For explicit control, you can override the auto-detected values in `workload-autoscaling/values.yaml`:
 
@@ -229,6 +230,7 @@ helmfile apply -e wva-only -n ${WVA_NAMESPACE}
 > **Note**: Use `WVA_NAMESPACE` (not `LLMD_NAMESPACE`) for the `-n` flag. This is the namespace where WVA will be installed. WVA will connect to your existing inference-scheduling deployment in the `LLMD_NAMESPACE`.
 
 This installs only:
+
 - **WVA** (workload-variant-autoscaler) in the namespace specified by `WVA_NAMESPACE` (default: `llm-d-autoscaler`)
 
 WVA will connect to your existing inference-scheduling deployment using the configured namespace and model service name. The model service name is auto-detected as `ms-{LLMD_RELEASE_NAME_POSTFIX}-llm-d-modelservice` unless explicitly set in values.yaml.
@@ -364,6 +366,7 @@ kubectl get variantautoscalings -n ${NAMESPACE}
 Edit `workload-autoscaling/values.yaml` for WVA settings. Key configurations:
 
 **For WVA-Only Mode**: If using wva-only installation, configure connection to existing inference-scheduling deployment:
+
 ```yaml
 llmd:
   namespace: llm-d-inference-scheduler  # Namespace of existing inference-scheduling deployment
@@ -372,6 +375,7 @@ llmd:
 ```
 
 **For Full Installation**: Model ID must match model configured in modelservice:
+
 ```yaml
 llmd:
   modelID: "Qwen/Qwen3-0.6B"  # Must match model ID in ms-workload-autoscaling/values.yaml
@@ -421,7 +425,7 @@ See [WVA chart documentation](https://github.com/llm-d-incubation/workload-varia
    ```bash
    # List all VariantAutoscalings
    kubectl get variantautoscalings -A
-   
+
    # For each VariantAutoscaling, add scaleTargetRef
    kubectl edit variantautoscaling <name> -n <namespace>
    ```
@@ -458,6 +462,7 @@ For more details, see the [WVA breaking changes documentation](https://github.co
 Remove WVA and Prometheus Adapter:
 
 **For Full Installation:**
+
 ```bash
 # Remove WVA stack
 cd guides/workload-autoscaling
@@ -465,6 +470,7 @@ helmfile destroy -n ${NAMESPACE:-llm-d-autoscaler}
 ```
 
 **For WVA-Only Installation:**
+
 ```bash
 # Remove only WVA (existing inference-scheduling stack remains)
 cd guides/workload-autoscaling
@@ -472,6 +478,7 @@ helmfile destroy -e wva-only -n ${NAMESPACE:-llm-d-autoscaler}
 ```
 
 **Remove Prometheus Adapter** (if not needed by other components):
+
 ```bash
 helm uninstall prometheus-adapter -n ${MON_NS:-llm-d-monitoring}
 ```
