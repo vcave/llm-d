@@ -1,10 +1,10 @@
-ARG BASE_IMAGE=vllm/vllm-openai-rocm:v0.15.0
+ARG BASE_IMAGE=vllm/vllm-openai-rocm:v0.15.1
 
 ARG RIXL_BRANCH="f33a5599"
 ARG RIXL_REPO="https://github.com/ROCm/RIXL.git"
 ARG UCX_BRANCH="da3fac2a"
 ARG UCX_REPO="https://github.com/ROCm/ucx.git"
-ARG ETCD_BRANCH="master"
+ARG ETCD_BRANCH="7c6e714"
 ARG ETCD_REPO="https://github.com/etcd-cpp-apiv3/etcd-cpp-apiv3.git"
 
 # we inherit the uv setup from "vllm-dev" image
@@ -16,6 +16,11 @@ ARG ETCD_REPO="https://github.com/etcd-cpp-apiv3/etcd-cpp-apiv3.git"
 ###
 
 FROM ${BASE_IMAGE} AS base
+
+ARG CACHE_BUSTER
+RUN if [ -n "${CACHE_BUSTER}" ]; then \
+        echo "$CACHE_BUSTER" > /tmp/builder-buster; \
+    fi;
 
 ENV ROCM_PATH=/opt/rocm
 ENV PATH=${ROCM_PATH}/llvm/bin:${ROCM_PATH}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
