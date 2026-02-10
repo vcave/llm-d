@@ -1,9 +1,9 @@
 multinode: false
 
 modelArtifacts:
-  uri: "hf://Qwen/Qwen3-0.6B"
-  name: "Qwen/Qwen3-0.6B"
-  size: 20Gi
+  uri: "hf://Qwen/Qwen3-32B"
+  name: "Qwen/Qwen3-32B"
+  size: 80Gi
   authSecretName: "llm-d-hf-token"
   labels:
     llm-d.ai/inference-serving: "true"
@@ -34,7 +34,7 @@ decode:
       interval: "30s"
   containers:
     - name: "vllm"
-      image: ghcr.io/vcave/llm-d/llm-d-rocm:v0.4.6-debug #  ghcr.io/llm-d/llm-d-rocm:v0.5.0
+      image: ghcr.io/llm-d/llm-d-rocm:v0.5.0
       modelCommand: vllmServe
       args:
         - "--disable-uvicorn-access-log"
