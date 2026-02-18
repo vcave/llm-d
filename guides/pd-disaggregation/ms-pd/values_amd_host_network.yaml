@@ -8,7 +8,7 @@ modelArtifacts:
   labels:
     llm-d.ai/inference-serving: "true"
     llm-d.ai/guide: "pd-disaggregation"
-    llm-d.ai/hardware-vairant: "gpu"
+    llm-d.ai/hardware-variant: "gpu"
     llm-d.ai/accelerator-vendor: "amd"
     llm-d.ai/model: "Llama-3.3-70B-Instruct-FP8-KV"
 
@@ -149,7 +149,7 @@ prefill:
   monitoring:
     podmonitor:
       enabled: true
-      portName: "vllm"  # decode vLLM service port (from routing.proxy.targetPort)
+      portName: "vllm"  # prefill vLLM service port (from routing.proxy.targetPort)
       path: "/metrics"
       interval: "30s"
   containers:

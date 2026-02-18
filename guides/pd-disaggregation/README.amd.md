@@ -8,10 +8,14 @@ This guide demonstrates how to deploy models using vLLM's P/D disaggregation sup
 
 > WARNING: We are still investigating and optimizing performance across hardware and networking configurations
 
-In this example, we will demonstrate a deployment of `amd/Llama-3.3-70B-Instruct-FP8-KV` with:
+In this example, we will demonstrate two deployments of `amd/Llama-3.3-70B-Instruct-FP8-KV`,
+a "resource-based" approach for production, and a "hostNetwork"-based approach for debugging.
 
-* 1 TP=8 Prefill Workers
-* 1 TP=8 Decode Worker
+|                 | **Resource-based (Default)**     | **hostNetwork (Debug)**          |
+| --------------- | -------------------------------- | -------------------------------- |
+| **Network**     | Standard K8s                     | Host                             |
+| **Parallelism** | 4 TP=1 (P) / 1 TP=4 (D)          | 1 TP=8 (P) / 1 TP=8 (D)          |
+| **Use Case**    | Production / Scaled Benchmarking | RDMA Troubleshooting / Debugging |
 
 ## P/D Best Practices
 
@@ -100,6 +104,7 @@ This command triggers the deployment of the disaggregated configuration describe
 For **debugging** purposes, this section covers deploying P/D disaggregation using Kubernetes `hostNetwork` feature.
 
 > WARNING: When `hostNetwork: true` is set, the container directly uses the network interfaces and port space of the node it is running on, bypassing the standard Kubernetes networking model and the Pod's isolated network namespace.
+> WARNING: When `privileged: true` is set, the container has full administrative access to the underlying host, thus allowing access to the RDMA devices. It should only be used for debugging and avoided in production where proper network operators and device plugins should be used.
 
 To ensure exclusive access to GPU resources in `hostNetwork` mode, make sure to adjust the number of GPU resources (8 in this example) to the maximum number of GPUs available on the node.
 
@@ -140,7 +145,7 @@ For more UCX customizations, please refer to the [UCX documentation](https://ope
 
 ### Gateway options
 
-To see specify your gateway choice you can use the `-e <gateway option>` flag, ex:
+To specify your gateway choice, you can use the `-e <gateway option>` flag, ex:
 
 ```bash
 helmfile apply -e kgateway -n ${NAMESPACE}
@@ -168,7 +173,6 @@ kubectl apply -f httproute.yaml -n ${NAMESPACE}
 
 * First, you should be able to list all helm releases to view the 3 charts got installed into your chosen namespace:
 
-# TODO
 ```bash
 helm list -n ${NAMESPACE}
 NAME        NAMESPACE   REVISION    UPDATED                                 STATUS      CHART                       APP VERSION
@@ -179,7 +183,6 @@ ms-pd       llm-d-pd    1           2026-02-04 16:08:59.144726828 +0000 UTC depl
 
 * Out of the box with the example you should have the following resources:
 
-# TODO
 ```bash
 kubectl get all -n ${NAMESPACE}
 NAME                                                    READY   STATUS             RESTARTS   AGE
@@ -220,7 +223,7 @@ For instructions on getting started making inference requests see [our docs](../
 
 ## Tuning Selective PD
 
-Selective PD is a feature in the `inference-scheduler` within the context of prefill-decode dissagregation, although it is disabled by default. This features enables routing to just decode even with the P/D deployed. To enable it, you will need to set `threshold` value for the `pd-profile-handler` plugin, in the [GAIE values file](./gaie-pd/values.yaml). You can see the value of this here:
+Selective PD is a feature in the `inference-scheduler` within the context of prefill-decode disaggregation, although it is disabled by default. This features enables routing to just decode even with the P/D deployed. To enable it, you will need to set `threshold` value for the `pd-profile-handler` plugin, in the [GAIE values file](./gaie-pd/values.yaml). You can see the value of this here:
 
 ```bash
 cat gaie-pd/values.yaml | yq '.inferenceExtension.pluginsCustomConfig."pd-config.yaml"' | yq '.plugins[] | select(.type == "pd-profile-handler")'
