@@ -48,12 +48,10 @@ decode:
         - '{"kv_connector":"NixlConnector", "kv_role":"kv_both"}'
         - "--disable-uvicorn-access-log"
         - '--attention-backend'
-        - 'ROCM_ATTN' # necessary when TP prefill != TP decode
+        - 'ROCM_ATTN' # only necessary when TP of prefill != decode; upcoming general fix.
         - "--max-model-len"
         - "32000"
       env:
-        #- name: UCX_PROTO_INFO
-        #  value: "y"
         # UCX Logging and debugging
         #- name: UCX_PROTO_INFO
         #  value: "y"
@@ -71,6 +69,8 @@ decode:
         # Customize KV-transfer traffic class ; see docs
         #- name: UCX_IB_TRAFFIC_CLASS
         #  value: "41"
+        - name: VLLM_NIXL_SIDE_CHANNEL_PORT
+          value: "5600"
         - name: VLLM_NIXL_SIDE_CHANNEL_HOST
           valueFrom:
             fieldRef:
@@ -163,7 +163,7 @@ prefill:
         - '{"kv_connector":"NixlConnector", "kv_role":"kv_both"}'
         - "--disable-uvicorn-access-log"
         - '--attention-backend'
-        - 'ROCM_ATTN' # necessary when TP prefill != TP decode
+        - 'ROCM_ATTN' # only necessary when TP of prefill != decode; upcoming general fix.
         - "--max-model-len"
         - "32000"
       env:
@@ -184,6 +184,8 @@ prefill:
         # Customize KV-transfer traffic class ; see docs
         #- name: UCX_IB_TRAFFIC_CLASS
         #  value: "41"
+        - name: VLLM_NIXL_SIDE_CHANNEL_PORT
+          value: "5600"
         - name: VLLM_NIXL_SIDE_CHANNEL_HOST
           valueFrom:
             fieldRef:

@@ -45,10 +45,12 @@ decode:
         - '{"kv_connector":"NixlConnector", "kv_role":"kv_both"}'
         - "--disable-uvicorn-access-log"
         - '--attention-backend'
-        - 'ROCM_ATTN' # necessary when TP of prefill != decode
+        - 'ROCM_ATTN' # only necessary when TP of prefill != decode; upcoming general fix.
         - "--max-model-len"
         - "32000"
       env:
+        - name: VLLM_NIXL_SIDE_CHANNEL_PORT
+          value: "5600"
         - name: VLLM_NIXL_SIDE_CHANNEL_HOST
           valueFrom:
             fieldRef:
@@ -135,10 +137,12 @@ prefill:
         - '{"kv_connector":"NixlConnector", "kv_role":"kv_both"}'
         - "--disable-uvicorn-access-log"
         - '--attention-backend'
-        - 'ROCM_ATTN' # necessary when TP of prefill != decode
+        - 'ROCM_ATTN' # only necessary when TP of prefill != decode; upcoming general fix.
         - "--max-model-len"
         - "32000"
       env:
+        - name: VLLM_NIXL_SIDE_CHANNEL_PORT
+          value: "5600"
         - name: VLLM_NIXL_SIDE_CHANNEL_HOST
           valueFrom:
             fieldRef:

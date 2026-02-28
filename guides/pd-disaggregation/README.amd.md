@@ -78,8 +78,8 @@ Before proceeding, ensure your Kubernetes cluster is configured with the necessa
 2. Network Support (NIC)
 
 * A network operator is required to expose NIC devices. Choose the operator that matches your hardware:
-** [AMD Network Operator](https://instinct.docs.amd.com/projects/network-operator/en/main/overview.html): For AMD AINIC hardware.
-** [NVIDIA Network Operator](https://docs.nvidia.com/networking/display/kubernetes2410/nvidia+network+operator): For NVIDIA NIC hardware.
+    - [AMD Network Operator](https://instinct.docs.amd.com/projects/network-operator/en/main/overview.html): For AMD AINIC hardware.
+    - [NVIDIA Network Operator](https://docs.nvidia.com/networking/display/kubernetes2410/nvidia+network+operator): For NVIDIA NIC hardware.
 
 If you haven't installed these yet, follow the official [AMD GPU Installation Guide](https://instinct.docs.amd.com/projects/gpu-operator/en/latest/installation/kubernetes-helm.html) and the [AMD Network Operator Installation Guide](https://instinct.docs.amd.com/projects/network-operator/en/main/installation/kubernetes-helm.html).
 
@@ -245,13 +245,7 @@ For information on this plugin, see our [`pd-profile-handler` docs in the infere
 To remove the deployment:
 
 ```bash
-# Remove the model services
 helmfile destroy -n ${NAMESPACE}
-
-# Remove the infrastructure
-helm uninstall ms-pd -n ${NAMESPACE}
-helm uninstall gaie-pd -n ${NAMESPACE}
-helm uninstall infra-pd -n ${NAMESPACE}
 ```
 
 **_NOTE:_** If you set the `$RELEASE_NAME_POSTFIX` environment variable, your release names will be different from the command above: `infra-$RELEASE_NAME_POSTFIX`, `gaie-$RELEASE_NAME_POSTFIX` and `ms-$RELEASE_NAME_POSTFIX`.
