@@ -18,15 +18,16 @@ accelerator:
 routing:
   servicePort: 8000
   proxy:
-    image: ghcr.io/llm-d/llm-d-routing-sidecar:v0.5.0
+    image: ghcr.io/llm-d/llm-d-routing-sidecar:v0.7.1
     connector: nixlv2
     secure: false
 
 decode:
+  create: true
+#  priorityClassName: nightly-gpu-critical
   parallelism:
     tensor: 8
     data: 1
-  create: true
   replicas: 1
   extraConfig:
     hostNetwork: true
@@ -39,7 +40,7 @@ decode:
       interval: "30s"
   containers:
     - name: "vllm"
-      image: ghcr.io/llm-d/llm-d-rocm:v0.5.0
+      image: ghcr.io/llm-d/llm-d-rocm:v0.6.0
       modelCommand: vllmServe
       args:
         - "--block-size"
@@ -61,11 +62,11 @@ decode:
         #- name: UCX_TLS
         #  value: "self,sm,rocm,rc"
         # Customize network devices ; see docs
-        #- name: UCX_NET_DEVICES
-        #  value: "mlx5_0:1,mlx5_2:1,mlx5_3:1,mlx5_4:1,mlx5_5:1,mlx5_7:1,mlx5_8:1,mlx5_9:1"
+        - name: UCX_NET_DEVICES
+          value: "bnxt_re0:1,bnxt_re1:1,bnxt_re2:1,bnxt_re3:1,bnxt_re4:1,bnxt_re5:1,bnxt_re6:1,bnxt_re7:1"
         # Customize RDMA GID ; see docs
-        #- name: UCX_IB_GID_INDEX
-        #  value: "3"
+        - name: UCX_IB_GID_INDEX
+          value: "3"
         # Customize KV-transfer traffic class ; see docs
         #- name: UCX_IB_TRAFFIC_CLASS
         #  value: "41"
@@ -105,6 +106,8 @@ decode:
           mountPath: /dev/shm
         - name: torch-compile-cache
           mountPath: /.cache
+        - name: bnxt
+          mountPath: /usr/lib/x86_64-linux-gnu/libibverbs/libbnxt_re-rdmav34.so
       startupProbe:
         httpGet:
           path: /v1/models
@@ -136,6 +139,8 @@ decode:
       sizeLimit: "64Gi"
   - name: torch-compile-cache
     emptyDir: {}
+  - name: bnxt
+    hostPath: { path: /usr/local/lib/libbnxt_re-rdmav34.so, type: File }
 
 prefill:
   parallelism:
@@ -154,7 +159,7 @@ prefill:
       interval: "30s"
   containers:
     - name: "vllm"
-      image: ghcr.io/llm-d/llm-d-rocm:v0.5.0
+      image: ghcr.io/llm-d/llm-d-rocm:v0.6.0
       modelCommand: vllmServe
       args:
         - "--block-size"
@@ -176,11 +181,11 @@ prefill:
         #- name: UCX_TLS
         #  value: "self,sm,rocm,rc"
         # Customize network devices ; see docs
-        #- name: UCX_NET_DEVICES
-        #  value: "mlx5_0:1,mlx5_2:1,mlx5_3:1,mlx5_4:1,mlx5_5:1,mlx5_7:1,mlx5_8:1,mlx5_9:1"
+        - name: UCX_NET_DEVICES
+          value: "bnxt_re0:1,bnxt_re1:1,bnxt_re2:1,bnxt_re3:1,bnxt_re4:1,bnxt_re5:1,bnxt_re7:1,bnxt_re8:1"
         # Customize RDMA GID ; see docs
-        #- name: UCX_IB_GID_INDEX
-        #  value: "3"
+        - name: UCX_IB_GID_INDEX
+          value: "3"
         # Customize KV-transfer traffic class ; see docs
         #- name: UCX_IB_TRAFFIC_CLASS
         #  value: "41"
@@ -220,6 +225,8 @@ prefill:
           mountPath: /dev/shm
         - name: torch-compile-cache
           mountPath: /.cache
+        - name: bnxt
+          mountPath: /usr/lib/x86_64-linux-gnu/libibverbs/libbnxt_re-rdmav34.so
       startupProbe:
         httpGet:
           path: /v1/models
@@ -251,3 +258,5 @@ prefill:
       sizeLimit: "64Gi"
   - name: torch-compile-cache
     emptyDir: {}
+  - name: bnxt
+    hostPath: { path: /usr/local/lib/libbnxt_re-rdmav34.so, type: File }
