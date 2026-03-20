@@ -31,24 +31,44 @@ Deploy the Gateway and HTTPRoute using the [gateway recipe](../../recipes/gatewa
 
 ### Deploy vLLM Model Server
 
+Select your accelerator vendor and connector type below.
+
 <!-- TABS:START -->
 
-<!-- TAB:Offloading Connector:default -->
-#### Offloading Connector
+<!-- TAB:NVIDIA - Offloading Connector:default -->
+#### NVIDIA - Offloading Connector
 
-Deploy the vLLM model server with the `OffloadingConnector` enabled.
+Deploy the vLLM model server on NVIDIA GPUs with the `OffloadingConnector` enabled.
 
 ```bash
 kubectl apply -k ./manifests/vllm/offloading-connector -n ${NAMESPACE}
 ```
 
-<!-- TAB:LMCache Connector -->
-#### LMCache Connector
+<!-- TAB:NVIDIA - LMCache Connector -->
+#### NVIDIA - LMCache Connector
 
-Deploy the vLLM model server with the `LMCache` connector enabled.
+Deploy the vLLM model server on NVIDIA GPUs with the `LMCache` connector enabled.
 
 ```bash
 kubectl apply -k ./manifests/vllm/lmcache-connector -n ${NAMESPACE}
+```
+
+<!-- TAB:AMD - Offloading Connector -->
+#### AMD - Offloading Connector
+
+Deploy the vLLM model server on AMD GPUs with the `OffloadingConnector` enabled.
+
+```bash
+kubectl apply -k ./manifests/vllm/offloading-connector-amd -n ${NAMESPACE}
+```
+
+<!-- TAB:AMD - LMCache Connector -->
+#### AMD - LMCache Connector
+
+Deploy the vLLM model server on AMD GPUs with the `LMCache` connector enabled.
+
+```bash
+kubectl apply -k ./manifests/vllm/lmcache-connector-amd -n ${NAMESPACE}
 ```
 
 <!-- TABS:END -->
@@ -180,7 +200,7 @@ helm uninstall llm-d-infpool -n ${NAMESPACE}
 
 kubectl delete -f ./manifests/pvc.yaml -n ${NAMESPACE}
 kubectl delete -k ./manifests/vllm/offloading-connector -n ${NAMESPACE}
-kubectl delete -k ./manifests/vllm/<offloading-connector|lmcache-connector> -n ${NAMESPACE}
+kubectl delete -k ./manifests/vllm/<offloading-connector|lmcache-connector|offloading-connector-amd|lmcache-connector-amd> -n ${NAMESPACE}
 # Supported self-installed inference gateway recipe paths are agentgateway and
 # agentgateway (preferred), agentgateway-openshift, plus kgateway and kgateway-openshift
 # (deprecated migration paths).
