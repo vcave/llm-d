@@ -9,25 +9,16 @@ patches:
       name: llm-d-model-server
     patch: |-
       - op: replace
-        path: /spec/template/spec/containers/0/command
-        value:
-          - "vllm"
-      - op: replace
-        path: /spec/template/spec/containers/0/args
-        value:
-          - "serve"
-          - "Qwen/Qwen3-32B"
-          - "--tensor-parallel-size"
-          - "2"
-          - "--port"
-          - "8000"
-          - "--max-num-seq"
-          - "1024"
-          - "--kv-transfer-config"
-          - '{"kv_connector":"LMCacheConnectorV1","kv_role":"kv_both"}'
-          - "--enable_prefix_caching"
-          - "--gpu-memory-utilization"
-          - "0.8"
+        path: /spec/template/spec/containers/0/args/0
+        value: |-
+          exec vllm serve \
+            openai/gpt-oss-120b \
+            --tensor-parallel-size 1 \
+            --kv-transfer-config '{"kv_connector":"LMCacheConnectorV1","kv_role":"kv_both"}' \
+            --port 8000 \
+            --gpu-memory-utilization 0.30 \
+            --disable-uvicorn-access-log \
+            --enable_prefix_caching
       - op: add
         path: /spec/template/spec/containers/0/env/-
         value:
