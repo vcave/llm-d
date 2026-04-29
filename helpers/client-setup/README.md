@@ -11,6 +11,7 @@
 | `helm`      | v3.12.0+                 | [Helm – quick-start install](https://helm.sh/docs/intro/install/)                               |
 | `helmfile`  | v1.1.0+                  | [Helmfile - installation](https://github.com/helmfile/helmfile?tab=readme-ov-file#installation) |
 | `kubectl`   | v1.28.0+                 | [kubectl – install & setup](https://kubernetes.io/docs/tasks/tools/install-kubectl/)            |
+| `kustomize` | v5.0.0+                  | [Kustomize – installation](https://kubectl.docs.kubernetes.io/installation/kustomize/)          |
 
 ### Optional Tools
 
