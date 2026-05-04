@@ -8,9 +8,10 @@ spec:
     spec:
       containers:
         - name: modelserver
+          image: vllm/vllm-openai:v0.19.1
           command: ["/bin/sh", "-c"]
           args:
-            # llmd-fs-connector pin must match the vLLM line set in kustomization.yaml's image tag.
+            # NOTE: The connector package version must match the vLLM version.
             # For vLLM 0.X.x use llmd-fs-connector==0.X.
             - |
               pip install 'llmd-fs-connector==0.19' --extra-index-url https://llm-d.github.io/llm-d-kv-cache/simple/
