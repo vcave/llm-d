@@ -31,6 +31,7 @@ This guide includes configurations for the following accelerators:
 | NVIDIA GPU          | `modelserver/gpu/vllm/`    | Default configuration                      |
 | NVIDIA GPU (SGLang) | `modelserver/gpu/sglang/`  | SGLang inference server                    |
 | AMD GPU             | `modelserver/amd/vllm/`    | AMD GPU                                    |
+| AMD GPU (SGLang)    | `modelserver/amd/sglang`   | AMD GPU                                    |
 | Intel XPU           | `modelserver/xpu/vllm/`    | Intel Data Center GPU Max 1550+            |
 | Intel Gaudi (HPU)   | `modelserver/hpu/vllm/`    | Gaudi 1/2/3 with DRA support               |
 | Google TPU v6e      | `modelserver/tpu-v6/vllm/` | GKE TPU                                    |
