@@ -1,0 +1,137 @@
+#
+# This is a template file illustrating the use of host network
+# to access RDMA NICs in prefill and decode containers.
+#
+# Warning: this is for debugging and troubleshooting.
+#          It is not recommended for production use.
+#
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prefill
+spec:
+  replicas: 1
+  template:
+    spec:
+      hostNetwork: true
+      hostIPC: true
+      dnsPolicy: ClusterFirstWithHostNet
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prefill
+spec:
+  template:
+    spec:
+      containers:
+        - name: modelserver
+          securityContext:
+            privileged: true
+            capabilities:
+              add:
+                - IPC_LOCK
+                - SYS_PTRACE
+            seccompProfile:
+              type: Unconfined
+          # Request all GPUs to avoid interferences
+          # when using the host network.
+          resources:
+            limits:
+              amd.com/gpu: "8"
+            requests:
+              amd.com/gpu: "8"
+          # Request all GPUs to avoid interferences
+          # when using the host network.
+          resources:
+            limits:
+              amd.com/gpu: "8"
+            requests:
+              amd.com/gpu: "8"
+          volumeMounts: # system/image dependent
+            - mountPath: <RDMA_LIBS_MOUNT_PATH>
+              name: rdma-libs
+              readOnly: true
+          env:
+            - name: UCX_LOG_LEVEL
+              value: "info"
+            # usually rocev2 on index 3
+            - name: UCX_IB_GID_INDEX
+              value: "<UCX_IB_GID_INDEX>"
+            - name: UCX_TLS
+              value: "self,sm,rocm,rc"
+            - name: UCX_NET_DEVICES
+              value: "<UCX_NET_DEVICES>"
+            - name: GLOO_SOCKET_IFNAME
+              value: "<GLOO_SOCKET_IFNAME>"
+      volumes:
+        - name: rdma-libs # system/image dependent
+          hostPath:
+            path: <RDMA_LIBS_HOST_PATH>
+            type: File
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: decode
+spec:
+  replicas: 1
+  template:
+    spec:
+      hostNetwork: true
+      hostIPC: true
+      dnsPolicy: ClusterFirstWithHostNet
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: decode
+spec:
+  template:
+    spec:
+      containers:
+        - name: modelserver
+          securityContext:
+            privileged: true
+            capabilities:
+              add:
+                - IPC_LOCK
+                - SYS_PTRACE
+            seccompProfile:
+              type: Unconfined
+          # Request all GPUs to avoid interferences
+          # when using the host network.
+          resources:
+            limits:
+              amd.com/gpu: "8"
+            requests:
+              amd.com/gpu: "8"
+          # Request all GPUs to avoid interferences
+          # when using the host network.
+          resources:
+            limits:
+              amd.com/gpu: "8"
+            requests:
+              amd.com/gpu: "8"
+          volumeMounts: # system/image dependent
+            - mountPath: <RDMA_LIBS_MOUNT_PATH>
+              name: rdma-libs
+              readOnly: true
+          env:
+            - name: UCX_LOG_LEVEL
+              value: "info"
+            # usually rocev2 on index 3
+            - name: UCX_IB_GID_INDEX
+              value: "<UCX_IB_GID_INDEX>"
+            - name: UCX_TLS
+              value: "self,sm,rocm,rc"
+            - name: UCX_NET_DEVICES
+              value: "<UCX_NET_DEVICES>"
+            - name: GLOO_SOCKET_IFNAME
+              value: "<GLOO_SOCKET_IFNAME>"
+      volumes:
+        - name: rdma-libs # system/image dependent
+          hostPath:
+            path: <RDMA_LIBS_HOST_PATH>
+            type: File
