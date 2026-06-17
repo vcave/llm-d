@@ -1,0 +1,93 @@
+#
+# AMD-CI temporary test setup:
+# - Access RDMA NICs in prefill and decode containers via hostNetwork.
+# - Preset NIXL and MORI env variables
+#
+# Warning: this is for debugging and troubleshooting.
+#          It is not recommended for production use.
+#
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prefill
+spec:
+  template:
+    spec:
+      hostNetwork: true
+      hostIPC: true
+      containers:
+        - name: modelserver
+          securityContext:
+            privileged: true
+            capabilities:
+              add:
+                - IPC_LOCK
+                - SYS_PTRACE
+            seccompProfile:
+              type: Unconfined
+          # Override and request all GPUs to avoid interferences when using the host network.
+          imagePullPolicy: Always
+          resources:
+            limits:
+              amd.com/gpu: "8"
+            requests:
+              amd.com/gpu: "8"
+          volumeMounts:
+            - { mountPath: /dev/infiniband, name: dev-ib }
+            - { mountPath: /sys/class/infiniband, name: sys-class-ib, readOnly: true }
+            - { mountPath: /sys/class/net,        name: sys-class-net, readOnly: true }
+          env:
+            - { name: UCX_NET_DEVICES,                value: "rocep28s0:1,rocep62s0:1,rocep79s0:1,rocep96s0:1,rocep158s0:1,rocep190s0:1,rocep206s0:1,rocep222s0:1" }
+            - { name: UCX_IB_GID_INDEX,               value: "3" }
+            - { name: UCX_TLS,                        value: "rc,self,rocm,shm" }
+            - { name: UCX_IB_GPU_DIRECT_RDMA,         value: "y" }
+            - { name: UCX_LOG_LEVEL,                  value: "INFO" }
+            - { name: UCX_PROTO_INFO,                  value: "y" }
+            - { name: VLLM_LOGGING_LEVEL,             value: "INFO" }
+      volumes:
+        - { name: dev-ib,         hostPath: { path: /dev/infiniband } }
+        - { name: sys-class-ib,   hostPath: { path: /sys/class/infiniband } }
+        - { name: sys-class-net,  hostPath: { path: /sys/class/net } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: decode
+spec:
+  template:
+    spec:
+      hostNetwork: true
+      hostIPC: true
+      containers:
+        - name: modelserver
+          imagePullPolicy: Always
+          securityContext:
+            privileged: true
+            capabilities:
+              add:
+                - IPC_LOCK
+                - SYS_PTRACE
+            seccompProfile:
+              type: Unconfined
+          # Override and request all GPUs to avoid interferences when using the host network.
+          resources:
+            limits:
+              amd.com/gpu: "8"
+            requests:
+              amd.com/gpu: "8"
+          volumeMounts:
+            - { mountPath: /dev/infiniband, name: dev-ib }
+            - { mountPath: /sys/class/infiniband, name: sys-class-ib, readOnly: true }
+            - { mountPath: /sys/class/net,        name: sys-class-net, readOnly: true }
+          env:
+            - { name: UCX_NET_DEVICES,                value: "rocep28s0:1,rocep62s0:1,rocep79s0:1,rocep96s0:1,rocep158s0:1,rocep190s0:1,rocep206s0:1,rocep222s0:1" }
+            - { name: UCX_IB_GID_INDEX,               value: "3" }
+            - { name: UCX_TLS,                        value: "rc,self,rocm,shm" }
+            - { name: UCX_IB_GPU_DIRECT_RDMA,         value: "y" }
+            - { name: UCX_LOG_LEVEL,                  value: "INFO" }
+            - { name: UCX_PROTO_INFO,                  value: "y" }
+            - { name: VLLM_LOGGING_LEVEL,             value: "INFO" }
+      volumes:
+        - { name: dev-ib,         hostPath: { path: /dev/infiniband } }
+        - { name: sys-class-ib,   hostPath: { path: /sys/class/infiniband } }
+        - { name: sys-class-net,  hostPath: { path: /sys/class/net } }
