@@ -19,6 +19,9 @@ spec:
             - "--no-disable-hybrid-kv-cache-manager"
             - "--port=8200"
           env:
+            # Adjust RPC timeout for AITER compilation to complete
+            - name: VLLM_RPC_TIMEOUT
+              value: "600"
             - name: HF_TOKEN
               valueFrom:
                 secretKeyRef:

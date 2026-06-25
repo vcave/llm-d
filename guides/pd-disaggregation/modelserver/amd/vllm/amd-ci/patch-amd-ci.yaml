@@ -13,6 +13,8 @@ metadata:
 spec:
   template:
     spec:
+      imagePullSecrets:
+        - name: dockerhub
       hostNetwork: true
       hostIPC: true
       containers:
@@ -36,18 +38,21 @@ spec:
             - { mountPath: /dev/infiniband, name: dev-ib }
             - { mountPath: /sys/class/infiniband, name: sys-class-ib, readOnly: true }
             - { mountPath: /sys/class/net,        name: sys-class-net, readOnly: true }
+            - { mountPath: /.aiter,               name: aiter-compile-cache }
           env:
             - { name: UCX_NET_DEVICES,                value: "rocep28s0:1,rocep62s0:1,rocep79s0:1,rocep96s0:1,rocep158s0:1,rocep190s0:1,rocep206s0:1,rocep222s0:1" }
             - { name: UCX_IB_GID_INDEX,               value: "3" }
             - { name: UCX_TLS,                        value: "rc,self,rocm,shm" }
             - { name: UCX_IB_GPU_DIRECT_RDMA,         value: "y" }
             - { name: UCX_LOG_LEVEL,                  value: "INFO" }
-            - { name: UCX_PROTO_INFO,                  value: "y" }
+            - { name: UCX_PROTO_INFO,                 value: "n" }
             - { name: VLLM_LOGGING_LEVEL,             value: "INFO" }
+            - { name: AITER_JIT_DIR,                  value: "/.aiter" }
       volumes:
         - { name: dev-ib,         hostPath: { path: /dev/infiniband } }
         - { name: sys-class-ib,   hostPath: { path: /sys/class/infiniband } }
         - { name: sys-class-net,  hostPath: { path: /sys/class/net } }
+        - { name: aiter-compile-cache, persistentVolumeClaim: { claimName: aiter-jit-cache } }
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -56,6 +61,8 @@ metadata:
 spec:
   template:
     spec:
+      imagePullSecrets:
+        - name: dockerhub
       hostNetwork: true
       hostIPC: true
       containers:
@@ -79,15 +86,18 @@ spec:
             - { mountPath: /dev/infiniband, name: dev-ib }
             - { mountPath: /sys/class/infiniband, name: sys-class-ib, readOnly: true }
             - { mountPath: /sys/class/net,        name: sys-class-net, readOnly: true }
+            - { mountPath: /.aiter,               name: aiter-compile-cache }
           env:
             - { name: UCX_NET_DEVICES,                value: "rocep28s0:1,rocep62s0:1,rocep79s0:1,rocep96s0:1,rocep158s0:1,rocep190s0:1,rocep206s0:1,rocep222s0:1" }
             - { name: UCX_IB_GID_INDEX,               value: "3" }
             - { name: UCX_TLS,                        value: "rc,self,rocm,shm" }
             - { name: UCX_IB_GPU_DIRECT_RDMA,         value: "y" }
             - { name: UCX_LOG_LEVEL,                  value: "INFO" }
-            - { name: UCX_PROTO_INFO,                  value: "y" }
+            - { name: UCX_PROTO_INFO,                 value: "n" }
             - { name: VLLM_LOGGING_LEVEL,             value: "INFO" }
+            - { name: AITER_JIT_DIR,                  value: "/.aiter" }
       volumes:
         - { name: dev-ib,         hostPath: { path: /dev/infiniband } }
         - { name: sys-class-ib,   hostPath: { path: /sys/class/infiniband } }
         - { name: sys-class-net,  hostPath: { path: /sys/class/net } }
+        - { name: aiter-compile-cache, persistentVolumeClaim: { claimName: aiter-jit-cache } }
