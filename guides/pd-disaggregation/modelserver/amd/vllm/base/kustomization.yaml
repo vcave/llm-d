@@ -11,7 +11,7 @@ components:
 
 labels:
   - pairs:
-      llm-d.ai/model: Llama-3.3-70B-Instruct-FP8-KV
+      llm-d.ai/model: gpt-oss-120b
       llm-d.ai/guide: pd-disaggregation
       llm-d.ai/accelerator-variant: gpu
       llm-d.ai/accelerator-vendor: amd
