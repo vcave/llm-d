@@ -159,8 +159,8 @@ spec:
                   --all2all-backend mori_low_latency \
                   --block-size 16 \
                   --gpu-memory-utilization 0.58 \
-                  --max-model-len 32768 \
-                  --no-enable-prefix-caching \
+                  --max-model-len 163840 \
+                  --enable-prefix-caching \
                   --compilation-config '{"cudagraph_mode":"FULL_DECODE_ONLY"}' \
                   --kv-transfer-config '{"kv_connector":"MoRIIOConnector",
                                           "kv_role":"kv_consumer",
