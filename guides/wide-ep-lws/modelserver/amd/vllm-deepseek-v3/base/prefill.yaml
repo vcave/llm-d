@@ -16,7 +16,7 @@ spec:
         # that exist only on one cluster, so there is no portable value to write. Your provider
         # overlay must attach one NAD per rail as net1..net8, matching `amd.com/vnic: 8`, with
         # every rail reachable between all four nodes; one unreachable rail hangs the 16-rank
-        # group. See `amd-ci/patch-amd-ci-fabric.yaml` for a worked example and
+        # group. See `providers/amd-ci/patch-amd-ci-fabric.yaml` for a worked example and
         # `kubectl get net-attach-def -A` for what your cluster publishes.
         labels:
           llm-d.ai/inference-serving: "true"
@@ -148,7 +148,7 @@ spec:
               #
               # The fabric-, NIC- and driver-specific MoRI settings are deliberately absent, because
               # none of them has an honest portable default. Set them in your provider overlay
-              # (`amd-ci/patch-amd-ci-fabric.yaml` is a worked example):
+              # (`providers/amd-ci/patch-amd-ci-fabric.yaml` is a worked example):
               #
               #   MORI_RDMA_DEVICES      ibverbs device names, one per rail, in the same order on
               #                          every pod (`ls /sys/class/infiniband`). Unset, MoRI uses

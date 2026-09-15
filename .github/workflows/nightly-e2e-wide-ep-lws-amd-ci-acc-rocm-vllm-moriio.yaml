@@ -89,7 +89,7 @@ jobs:
       prefill_pods: ${{ inputs.prefill_pods || 'auto' }}
       accelerator_type: ${{ inputs.accelerator_type || 'amd' }}
       backend_type: ${{ inputs.backend_type || 'vllm-deepseek-v3' }}
-      infra_provider: ${{ inputs.infra_provider || 'amd-ci' }}
+      infra_provider: ${{ inputs.infra_provider || 'providers/amd-ci' }}
       connector: ${{ inputs.connector || '' }}
       cluster_namespace: ${{ inputs.cluster_namespace || 'llm-d-nightly-wide-ep-lws-amd-rocm-moriio' }}
       helm_release: ${{ inputs.helm_release || 'llmdbenchcicdr-wide-ep-amd-moriio' }}

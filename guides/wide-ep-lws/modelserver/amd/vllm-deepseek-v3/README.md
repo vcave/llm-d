@@ -29,7 +29,7 @@ In addition to the [wide-ep-lws prerequisites](../../../README.md#prerequisites)
   rail hangs the whole 16-rank group. `base/` deliberately carries none of the
   fabric-specific configuration: a NetworkAttachmentDefinition name, RDMA device names and
   RoCE QoS values are properties of one cluster, so they come from the provider overlay
-  instead. `amd-ci/patch-amd-ci-fabric.yaml` is a worked example, and the block comment in
+  instead. `providers/amd-ci/patch-amd-ci-fabric.yaml` is a worked example, and the block comment in
   `base/prefill.yaml` lists every variable involved and what it does.
 
 * **A `model-pvc` claim in the namespace, provisioned before you apply.** No overlay creates
@@ -97,10 +97,12 @@ whose `model-pvc` already holds this model simply skips the download.
 | Overlay | Use |
 | --- | --- |
 | `base` | Portable recipe. Not deployable on its own: it attaches no rail interfaces and sets no fabric configuration |
-| `amd-ci` | AMD CI cluster |
+| `providers/amd-ci` | AMD CI cluster fabric overlay |
+| `deployments/offload-cpu` | `providers/amd-ci` + CPU KV-cache offloading on prefill |
+| `deployments/offload-tiered` | `providers/amd-ci` + CPU/NVMe tiered KV-cache offloading on prefill |
 
-For another cluster, copy `amd-ci/` and edit it — at minimum the NAD name and namespace, the
-`MORI_RDMA_DEVICES` names, and the RoCE service level and traffic class.
+For another cluster, copy `providers/amd-ci/` and edit it — at minimum the NAD name and namespace,
+the `MORI_RDMA_DEVICES` names, and the RoCE service level and traffic class.
 
 ```bash
 export MODEL=deepseek-ai/DeepSeek-V3

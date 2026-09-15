@@ -164,8 +164,9 @@ Apply the Kustomize overlay for your specific backend:
 # Keep the NVIDIA line first. CI rewrites `modelserver/gpu/vllm` in every command
 # below to `modelserver/<accelerator>/<backend>` and runs the first match, so the
 # NVIDIA line is the one every lane actually executes (the AMD lane resolves it to
-# modelserver/amd/vllm-deepseek-v3/${INFRA_PROVIDER}). Moving a per-accelerator line
-# above it makes that literal path win instead, silently deploying base/ not amd-ci/.
+# modelserver/amd/vllm-deepseek-v3/${INFRA_PROVIDER}, e.g. providers/amd-ci). Moving a
+# per-accelerator line above it makes that literal path win instead, silently deploying
+# base/ not providers/amd-ci/.
 # NVIDIA GPU
 export INFRA_PROVIDER=gke # options: gke, coreweave, dgx-cloud-gb200
 kubectl apply -n ${NAMESPACE} -k ${REPO_ROOT}/guides/${GUIDE_NAME}/modelserver/gpu/vllm/${INFRA_PROVIDER}
@@ -176,7 +177,7 @@ kubectl apply -n ${NAMESPACE} -k ${REPO_ROOT}/guides/${GUIDE_NAME}/modelserver/x
 
 # AMD Instinct — read that recipe's README first: it needs a pre-provisioned
 # RWX `model-pvc` for the model cache, and `base/` carries no fabric configuration, so it
-# needs a provider overlay (copy `amd-ci/`) to attach the rails and set the MoRI RDMA vars.
+# needs a provider overlay (copy `providers/amd-ci/`) to attach the rails and set the MoRI RDMA vars.
 kubectl apply -n ${NAMESPACE} -k ${REPO_ROOT}/guides/${GUIDE_NAME}/modelserver/amd/vllm-deepseek-v3/base
 ```
 
