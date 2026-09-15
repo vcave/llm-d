@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# DeepSeek-V3 on AMD Instinct, 2P2D wide-EP, with CPU KV-cache offloading on prefill.
+# Composes the amd-ci fabric overlay (copy and re-point its NAD/RDMA/RoCE values for another
+# cluster, as the recipe README explains) with the offloading-cpu component. This is the
+# deployable, agentic-shaped unit; base/ alone attaches no rails.
+resources:
+  - ../../amd-ci
+components:
+  - ../../components/offloading-cpu
