@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+# CPU-only KV cache offloading on prefill: evicted prefixes stay reusable in host DRAM
+# (KV_OFFLOAD_CPU_BYTES, 100 GiB default) instead of being recomputed on session resume.
+# The prefill launch script builds a MultiConnector(MoRIIO + OffloadingConnector) when
+# OFFLOADING_MODE=cpu. Requires prefix caching (enabled in base).
+patches:
+  - target:
+      kind: LeaderWorkerSet
+      name: ".*-prefill"
+    patch: |-
+      - op: add
+        path: /spec/leaderWorkerTemplate/workerTemplate/spec/containers/0/env/-
+        value:
+          name: OFFLOADING_MODE
+          value: "cpu"

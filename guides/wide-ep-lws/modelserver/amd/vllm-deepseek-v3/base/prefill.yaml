@@ -45,6 +45,12 @@ spec:
           - name: model-cache
             persistentVolumeClaim:
               claimName: model-pvc
+          # NVMe lower tier for OFFLOADING_MODE=tiered. Unused by cpu/off. hostPath so it survives pod
+          # restarts; a provider overlay may repoint it. Nodes without local NVMe should use offloading-cpu.
+          - name: nvme-cache
+            hostPath:
+              path: /mnt/local/kv-cache
+              type: DirectoryOrCreate
         containers:
           - name: vllm
             image: REPLACE_MODEL_SERVER_IMAGE
@@ -64,6 +70,26 @@ spec:
 
                 # RUN vLLM DeepSeek-V3 prefill (MoRI-EP high throughput)
                 START_RANK=$(( ${LWS_WORKER_INDEX} * DP_SIZE_LOCAL ))
+
+                # KV transfer connector, selected by OFFLOADING_MODE (off|cpu|tiered; components/offloading-*
+                # set it). The default `off` is byte-for-byte the original single MoRIIOConnector producer used
+                # for P/D KV transfer. `cpu`/`tiered` wrap that same connector in a MultiConnector alongside
+                # vLLM's OffloadingConnector so evicted prefixes stay reusable across turns -- CPU DRAM, plus an
+                # fs NVMe tier at /mnt/nvme-cache when tiered. Requires prefix caching (enabled above).
+                # NOTE: the MoRIIO + OffloadingConnector MultiConnector composition is not yet validated on the
+                # ROCm engine image; until it is, leave OFFLOADING_MODE unset (off).
+                MORIIO_CONNECTOR='{"kv_connector":"MoRIIOConnector","kv_role":"kv_producer","kv_connector_extra_config":{"http_port":"8000","handshake_port":"6301","notify_port":"61005","read_mode":"false"}}'
+                case "${OFFLOADING_MODE:-off}" in
+                  cpu)
+                    KV_TRANSFER_CONFIG='{"kv_connector":"MultiConnector","kv_role":"kv_both","kv_load_failure_policy":"fail","kv_connector_extra_config":{"connectors":['"$MORIIO_CONNECTOR"',{"kv_connector":"OffloadingConnector","kv_role":"kv_both","kv_connector_extra_config":{"cpu_bytes_to_use":'"${KV_OFFLOAD_CPU_BYTES:-107374182400}"',"eviction_policy":"lru"}}]}}'
+                    ;;
+                  tiered)
+                    KV_TRANSFER_CONFIG='{"kv_connector":"MultiConnector","kv_role":"kv_both","kv_load_failure_policy":"fail","kv_connector_extra_config":{"connectors":['"$MORIIO_CONNECTOR"',{"kv_connector":"OffloadingConnector","kv_role":"kv_both","kv_connector_extra_config":{"spec_name":"TieringOffloadingSpec","cpu_bytes_to_use":'"${KV_OFFLOAD_CPU_BYTES:-107374182400}"',"eviction_policy":"lru","secondary_tiers":[{"type":"fs","root_dir":"/mnt/nvme-cache","n_read_threads":16,"n_write_threads":16}]}}]}}'
+                    ;;
+                  *)
+                    KV_TRANSFER_CONFIG="$MORIIO_CONNECTOR"
+                    ;;
+                esac
 
                 # Benchmark CI reads the model name off the one bare continuation line: keep it off the exec line.
                 exec vllm serve \
@@ -86,12 +112,7 @@ spec:
                   --max-model-len 163840 \
                   --enable-prefix-caching \
                   --compilation-config '{"cudagraph_mode":"PIECEWISE"}' \
-                  --kv-transfer-config '{"kv_connector":"MoRIIOConnector",
-                                          "kv_role":"kv_producer",
-                                          "kv_connector_extra_config":{"http_port":"8000",
-                                                                       "handshake_port":"6301",
-                                                                       "notify_port":"61005",
-                                                                       "read_mode":"false"}}'
+                  --kv-transfer-config "$KV_TRANSFER_CONFIG"
             env:
               - name: POD_IP
                 valueFrom:
@@ -111,6 +132,10 @@ spec:
               # Must exceed the sidecar's 90 s idle timeout, or pooled connections are reset mid-request.
               - name: VLLM_HTTP_TIMEOUT_KEEP_ALIVE
                 value: "120"
+              # CPU DRAM budget for the OffloadingConnector when OFFLOADING_MODE=cpu|tiered (100 GiB default).
+              # Fits inside the pod's 1200Gi request; raise together with that request to grow the cache.
+              - name: KV_OFFLOAD_CPU_BYTES
+                value: "107374182400"
 
               # MoRI symmetric heap, 16 GiB. A function of the model and the EP width, not of the
               # fabric: MoRI's own default is 4 GiB, which DeepSeek-V3 at EP16 overruns.
@@ -247,3 +272,5 @@ spec:
                 mountPath: /var/cache/vllm
               - name: model-cache
                 mountPath: /model-cache
+              - name: nvme-cache
+                mountPath: /mnt/nvme-cache
