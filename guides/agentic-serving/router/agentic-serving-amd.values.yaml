@@ -1,0 +1,61 @@
+# Agentic-serving overrides for the DeepSeek-V3-on-AMD deployment. Replaces the single
+# prefix-cache scorer in wide-ep-lws.values.yaml with dual GPU+CPU prefix-cache scoring, so
+# P/D routing accounts for the CPU-offloaded KV (OFFLOADING_MODE=cpu on prefill) when picking
+# an endpoint. This is the AMD peer of wide-ep-lws/router/glm-5.2-overrides.values.yaml.
+#
+# Layer LAST, on top of:
+#   recipes/router/base.values.yaml
+#   wide-ep-lws/router/wide-ep-lws.values.yaml
+#   wide-ep-lws/router/amd.values.yaml   (accelerator matchLabels/targetPorts for AMD)
+# The `wide-ep-lws-config.yaml` key below matches the pluginsConfigFile set in
+# wide-ep-lws.values.yaml, so this replaces that EPP config wholesale. modelServers
+# matchLabels are inherited from amd.values.yaml (the pods keep their wide-ep-lws labels).
+router:
+  epp:
+    pluginsCustomConfig:
+      wide-ep-lws-config.yaml: |
+        apiVersion: llm-d.ai/v1alpha1
+        kind: EndpointPickerConfig
+        plugins:
+        - type: always-disagg-pd-decider
+        - type: disagg-profile-handler
+          parameters:
+            deciders:
+              prefill: always-disagg-pd-decider
+        - type: prefill-filter
+        - type: decode-filter
+        - type: approx-prefix-cache-producer
+          name: gpu-prefix-cache-producer
+        - type: approx-prefix-cache-producer
+          name: cpu-prefix-cache-producer
+          parameters:
+            autoTune: false
+            # Blocks tracked per prefill server for the CPU-offloaded KV. Size against the
+            # prefill CPU tier (KV_OFFLOAD_CPU_BYTES, default 100 GiB) and DeepSeek-V3's
+            # MLA KV block size; retune when either changes.
+            lruCapacityPerServer: 200000
+        - type: prefix-cache-scorer
+          name: gpu-prefix-cache-scorer
+          parameters:
+            prefixMatchInfoProducerName: gpu-prefix-cache-producer
+        - type: prefix-cache-scorer
+          name: cpu-prefix-cache-scorer
+          parameters:
+            prefixMatchInfoProducerName: cpu-prefix-cache-producer
+        - type: queue-scorer
+        - type: active-request-scorer
+        schedulingProfiles:
+        - name: prefill
+          plugins:
+          - pluginRef: prefill-filter
+          - pluginRef: gpu-prefix-cache-scorer
+            weight: 5
+          - pluginRef: cpu-prefix-cache-scorer
+            weight: 2
+          - pluginRef: active-request-scorer
+            weight: 1
+        - name: decode
+          plugins:
+          - pluginRef: decode-filter
+          - pluginRef: active-request-scorer
+            weight: 3

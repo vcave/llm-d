@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# Agentic-serving deployment of DeepSeek-V3 on AMD Instinct (MI355X): the wide-ep-lws
+# 2P2D wide-EP recipe (DP=EP=16, TP=1 per role, MoRI-EP all-to-all + MoRI-IO P/D KV
+# transfer on a rail-only RoCE fabric) with CPU KV-cache offloading enabled on prefill.
+# The offload-cpu deployment already bundles the providers/amd-ci fabric overlay and the
+# offloading-cpu component; copy and re-point providers/amd-ci for another cluster.
+# For prefill nodes with local NVMe, swap deployments/offload-cpu -> deployments/offload-tiered.
+# Full manifest reference and alternatives:
+# guides/wide-ep-lws/modelserver/amd/vllm-deepseek-v3/.
+resources:
+  - ../../../../../wide-ep-lws/modelserver/amd/vllm-deepseek-v3/deployments/offload-cpu

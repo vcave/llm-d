@@ -44,6 +44,7 @@ fits the model. Each is listed as *model on accelerator*; pick by hardware, then
 - [NVIDIA-Nemotron-3-Ultra-550B on H200](nemotron-3-ultra-550b-h200.md) — P/D-disaggregated serving (TP=8) on 8× H200, with CPU KV-offloading and ready-to-use coding-agent client configs.
 - [GLM-5.2-FP8 on H200](glm-5-2-h200.md) — wide expert-parallel P/D-disaggregated serving with MTP and tiered KV-offloading; the default uses 8 H200 nodes, with alternatives from 2 to 10 nodes. See the [GLM-5.2 blog post](https://llm-d.ai/blog/serving-glm-5-2-agentic-workloads-on-llm-d) for the benchmark analysis.
 - [Qwen3-Coder-480B on TPU v7](qwen3-coder-480b-tpu.md) — routing + CPU KV-offloading on 8× TPU v7x (2x2x1).
+- [DeepSeek-V3 on AMD Instinct MI355X](deepseek-v3-amd-mi355x.md) — wide expert-parallel P/D-disaggregated serving (2P2D DEP16) with MoRI-EP + MoRI-IO on a rail-only RoCE fabric and CPU KV-offloading, on 32 MI355X across 4 nodes. Offloading path is experimental on ROCm.
 
 ## Benchmarking
 
